@@ -247,7 +247,7 @@ def wh_iou(box1, box2):
     return inter_area / union_area  # iou
 
 
-def compute_loss(p, targets):  # predictions, targets
+def compute_loss(p, targets, var):  # predictions, targets
     FT = torch.cuda.FloatTensor if p[0].is_cuda else torch.FloatTensor
     lxy, lwh, lcls, lconf = FT([0]), FT([0]), FT([0]), FT([0])
     txy, twh, tcls, indices = targets
@@ -256,36 +256,37 @@ def compute_loss(p, targets):  # predictions, targets
     BCE = nn.BCEWithLogitsLoss()
 
     # Compute losses
+    bs = p[0].shape[0]  # batch size
     # gp = [x.numel() for x in tconf]  # grid points
     for i, pi0 in enumerate(p):  # layer i predictions, i
         b, a, gj, gi = indices[i]  # image, anchor, gridx, gridy
         tconf = torch.zeros_like(pi0[..., 0])  # conf
 
         # Compute losses
-        k = 1  # nT / bs
+        k = bs  # nT / bs
         if len(b) > 0:
             pi = pi0[b, a, gj, gi]  # predictions closest to anchors
             tconf[b, a, gj, gi] = 1  # conf
 
-            lxy += k * MSE(torch.sigmoid(pi[..., 0:2]), txy[i])  # xy loss
-            lwh += k * MSE(pi[..., 2:4], twh[i])  # wh loss
-            lcls += (k / 4) * CE(pi[..., 5:], tcls[i])  # class_conf loss
+            lxy += var[0] * k * MSE(torch.sigmoid(pi[..., 0:2]), txy[i])  # xy loss
+            lwh += var[1] * k * MSE(pi[..., 2:4], twh[i])  # wh loss
+            lcls += var[2] * k * CE(pi[..., 5:], tcls[i])  # k/4 class_conf loss
 
         # pos_weight = FT([gp[i] / min(gp) * 4.])
         # BCE = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
-        lconf += (k * 64) * BCE(pi0[..., 4], tconf)  # obj_conf loss
+        lconf += var[3] * k * BCE(pi0[..., 4], tconf)  # k * 64 obj_conf loss
     loss = lxy + lwh + lconf + lcls
 
     # Add to dictionary
     d = defaultdict(float)
-    losses = [loss.item(), lxy.item(), lwh.item(), lconf.item(), lcls.item()]
-    for name, x in zip(['total', 'xy', 'wh', 'conf', 'cls'], losses):
-        d[name] = x
+    losses = [loss, lxy, lwh, lconf, lcls]
+    for key, val in zip(['total', 'xy', 'wh', 'conf', 'cls'], losses):
+        d[key] = val.item()
 
     return loss, d
 
 
-def build_targets(model, targets):
+def build_targets(model, targets, var):
     # targets = [image, class, x, y, w, h]
     if isinstance(model, nn.parallel.DistributedDataParallel):
         model = model.module
@@ -303,7 +304,7 @@ def build_targets(model, targets):
         # reject below threshold ious (OPTIONAL, increases P, lowers R)
         reject = True
         if reject:
-            j = iou > 0.01
+            j = iou > var[4] # 0.01
             t, a, gwh = targets[j], a[j], gwh[j]
         else:
             t = targets

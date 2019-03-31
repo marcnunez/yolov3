@@ -137,10 +137,10 @@ def train(
             pred = model(imgs)
 
             # Build targets
-            target_list = build_targets(model, targets)
+            target_list = build_targets(model, targets, opt.var)
 
             # Compute loss
-            loss, loss_dict = compute_loss(pred, target_list)
+            loss, loss_dict = compute_loss(pred, target_list, opt.var)
 
             # Compute gradient
             loss.backward()
@@ -206,15 +206,18 @@ if __name__ == '__main__':
     parser.add_argument('--cfg', type=str, default='cfg/yolov3.cfg', help='cfg file path')
     parser.add_argument('--data-cfg', type=str, default='cfg/coco.data', help='coco.data file path')
     parser.add_argument('--multi-scale', action='store_true', help='random image sizes per batch 320 - 608')
-    parser.add_argument('--img-size', type=int, default=32 * 13, help='pixels')
+    parser.add_argument('--img-size', type=int, default=32 * 10, help='pixels')
     parser.add_argument('--resume', action='store_true', help='resume training flag')
     parser.add_argument('--num-workers', type=int, default=4, help='number of Pytorch DataLoader workers')
     parser.add_argument('--dist-url', default='tcp://127.0.0.1:9999', type=str, help='distributed training init method')
     parser.add_argument('--rank', default=0, type=int, help='distributed training node rank')
     parser.add_argument('--world-size', default=1, type=int, help='number of nodes for distributed training')
     parser.add_argument('--backend', default='nccl', type=str, help='distributed backend')
+    parser.add_argument('--var', nargs='+', default=[1, 1, 1, 1, 0.01], help='debug list')  # kxy=1, kwh=1, kcls=0.25, kconf=64, thres=0.01
+
     opt = parser.parse_args()
     print(opt, end='\n\n')
+    opt.var = [float(x) for x in opt.var]
 
     init_seeds()
 
