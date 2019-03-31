@@ -263,7 +263,8 @@ def compute_loss(p, targets, var):  # predictions, targets
         tconf = torch.zeros_like(pi0[..., 0])  # conf
 
         # Compute losses
-        k = bs  # nT / bs
+        nT = len(txy[i])  # number of targets
+        k = 1  # nT / bs
         if len(b) > 0:
             pi = pi0[b, a, gj, gi]  # predictions closest to anchors
             tconf[b, a, gj, gi] = 1  # conf
@@ -304,7 +305,7 @@ def build_targets(model, targets, var):
         # reject below threshold ious (OPTIONAL, increases P, lowers R)
         reject = True
         if reject:
-            j = iou > var[4] # 0.01
+            j = iou > var[4]  # 0.01
             t, a, gwh = targets[j], a[j], gwh[j]
         else:
             t = targets

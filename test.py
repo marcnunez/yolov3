@@ -173,13 +173,13 @@ def test(
         cocoEval.evaluate()
         cocoEval.accumulate()
         cocoEval.summarize()
-        mAP = cocoEval.stats[1]  # update mAP to pycocotools mAP
+        mAPj = cocoEval.stats[1]  # update mAP to pycocotools mAP
 
     # F1 score = harmonic mean of precision and recall
     # F1 = 2 * (mP * mR) / (mP + mR)
 
     # Return mAP
-    return mP, mR, mAP
+    return mP, mR, mAP, mAPj
 
 
 if __name__ == '__main__':
