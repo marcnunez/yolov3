@@ -51,6 +51,9 @@ cp -r weights yolov3
 cp -r cocoapi/PythonAPI/pycocotools yolov3
 cd yolov3
 
-#git pull https://github.com/ultralytics/yolov3 map_update  # branch
+git pull https://github.com/ultralytics/yolov3 hyperparameter_search  # branch
 python3 train.py --epochs 1 --var  1 1 0.25 64 0.01
+python3 train.py --epochs 1 --var  1 1 1 1 0.01
+python3 train.py --epochs 1 --var  16 16 16 16 0.01
+sudo shutdown
 
