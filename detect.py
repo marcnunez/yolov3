@@ -18,7 +18,7 @@ def detect(
         nms_thres=0.5,
         save_txt=False,
         save_images=True,
-        webcam=False
+        webcam=True
 ):
     device = torch_utils.select_device()
     if os.path.exists(output):
